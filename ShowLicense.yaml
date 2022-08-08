@@ -1,0 +1,11 @@
+---
+- name: Show Licenses on Cat devices.
+  hosts: "{{ cisco_router }}"
+  tasks:
+  - name: Show License Summary
+    ios_command:
+      commands:
+        - show license summary
+    register: show_lic
+  - debug:
+      var: show_lic.stdout_lines

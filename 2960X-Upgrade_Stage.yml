@@ -1,0 +1,44 @@
+- name: Stage 2960X code upgrade. Does everything except reboot the switch.
+  hosts: "{{ cisco_router }}"
+  gather_facts: true
+  vars:
+   meta:
+     ios_image_size: "{{ ios_image_size_kb }}"
+     ios_version: "{{ ios_version }}"
+     image_name: "{{ ios_image_name }}"
+  tasks:
+  - name: Add FTP username and password. This is done to get around issues with special characters.
+    ios_config:
+      lines:
+        - "ip ftp username {{ ftp_username }}"
+        - "ip ftp password {{ ftp_password }}"
+  - name: Copy image if running wrong IOS version and if there's enough room.
+    block:
+      - name: Copy image if theres enough room AND if switch isnt running the target version.
+        ios_command:
+          commands:
+              - command: "copy ftp://{{ ftp_server_name}}/{{ ios_image_name }} flash:"
+                prompt: "Destination filename"
+                answer: "{{ ios_image_name }}"
+        vars:
+          ansible_command_timeout: 3600
+    when: 
+      - ansible_net_filesystems_info['flash:']['spacefree_kb'] > meta['ios_image_size']
+      - ansible_net_version != meta['ios_version']
+  - name: Check MD5 hash
+    ios_command:
+      commands:
+        - command: "verify /md5 flash:{{ ios_image_name }}"
+    register: md5_result
+    vars:
+      ansible_command_timeout: 300
+  - name: Change Boot Variable if the MD5 check passes
+    block:
+      - name: Change boot variable
+        ios_config:
+          lines:
+              - "boot system switch all flash:{{ ios_image_name }}"
+      - name: Copy run start
+        ios_command:
+          commands: write mem
+    when: "'{{ md5_checksum }}' in md5_result.stdout[0]"

@@ -1,0 +1,28 @@
+- name: Install the ios image. Reloads the switch and confirms version. For use on IOS-XE 9K series switches.
+  hosts: "{{ cisco_router }}"
+  gather_facts: true
+  tasks:
+  - name: Reload
+    ios_command:
+      commands:
+          - command: "install add file flash:{{ ios_image_name }} activate commit"
+            check_all: True
+            prompt: 
+              - "Please confirm you have changed boot config to flash:packages.conf"
+              - "This operation may require a reload of the system. Do you want to proceed?"
+            answer:
+              - "y"
+              - "y"
+    vars:
+      ansible_command_timeout: 2400
+  - name: Wait for device to come back online
+    wait_for_connection:
+      delay: 180
+      timeout: 600
+  - name: Check version
+    ios_command:
+      commands:
+        - command: sh version | b Switch Port
+    register: show_version_output
+  - debug:
+      var: show_version_output.stdout_lines

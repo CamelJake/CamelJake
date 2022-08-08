@@ -1,0 +1,16 @@
+---
+
+- name: Check Config
+  hosts: "{{ cisco_router }}"
+  connection: network_cli
+  gather_facts: no
+
+  tasks:
+
+  - name: View Running Config vs. Last Known Good
+
+    ios_config:
+      diff_against: intended
+      intended_config: "{{ lookup('file', '/ansible/configs/{{ inventory_hostname }}.cisco') }}"
+    diff: true
+    register: diff_results

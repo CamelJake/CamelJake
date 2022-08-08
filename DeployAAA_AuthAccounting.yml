@@ -1,0 +1,16 @@
+---
+- name: Deploy ISE Authorization and Accounting
+  hosts: "{{ cisco_router }}"
+  connection: network_cli
+  tasks:
+  - name: Define AAA authorization and accounting 
+    ios_config:
+      lines:
+      - aaa authorization config-commands
+      - aaa authorization commands 0 default group ISE-TACACS local
+      - aaa authorization commands 1 default group ISE-TACACS local
+      - aaa authorization commands 15 default group ISE-TACACS local
+      - aaa accounting exec default start-stop group ISE-TACACS
+      - aaa accounting commands 0 default start-stop group ISE-TACACS
+      - aaa accounting commands 1 default start-stop group ISE-TACACS
+      - aaa accounting commands 15 default start-stop group ISE-TACACS

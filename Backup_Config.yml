@@ -1,0 +1,17 @@
+---
+
+- name: Backup Configurations
+  hosts: "{{ cisco_router }}"
+  tasks:
+
+  - name: Pulling Config
+    ios_command:
+      commands:
+        - show running-config
+    register: backup_config
+
+  - name: Storing the Config
+    copy:
+      content: "{{ backup_config.stdout[0] }}"
+      dest: "/configs/{{ group_names }}/{{ inventory_hostname }}.cisco"
+      force: yes

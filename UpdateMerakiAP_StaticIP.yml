@@ -1,0 +1,26 @@
+---
+- name: Query all devices of a specific model.
+  hosts: ShyftGroup-LAN
+  vars:
+    static_range_start: 99
+  tasks:
+  - name: Get AP info
+    meraki_device:
+      auth_key: "{{ api_key }}"
+      org_name: The Shyft Group - LAN
+      net_name: Kansas City - 9501
+      model: MR42
+      state: query
+    register: serial
+    delegate_to: localhost
+    
+  - name: Test Loop
+    debug:
+      msg: 
+        -"{{ item['serial'] }}"
+        -"{{ static_range_start + 1 }}
+    loop: "{{ serial['data'] }}"
+    delegate_to: localhost
+    
+
+

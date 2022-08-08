@@ -1,0 +1,49 @@
+- name: Stage 9200L or 9300 code upgrade. Does everything except reboot the switch.
+  hosts: "{{ cisco_router }}"
+  gather_facts: true
+  vars:
+    meta:
+      ios_image_size: "{{ ios_image_size_kb }}"
+      ios_version: "{{ ios_version }}"
+      image_name: "{{ ios_image_name }}"
+  tasks:
+    - name: Remove inactive files from flash
+      ios_command:
+        commands:
+         - command: install remove inactive
+           prompt: "Do you want to remove the above files"
+           answer: "y"
+      vars:
+        ansible_command_timeout: 600
+    - name: Copy image from FTP if theres enough room.
+      block:
+        - name: Get updated facts (after old files have been removed)
+          setup:
+        - name: Copy image
+          ios_command:
+            commands:
+              - command: "copy ftp://{{ ftp_username }}:{{ ftp_password }}@{{ ftp_server_name }}/{{ ios_image_name }} flash:"
+                prompt: "Destination filename"
+                answer: "{{ ios_image_name }}"
+          vars:
+            ansible_command_timeout: 3600
+      when: 
+        - ansible_net_filesystems_info['flash:']['spacefree_kb'] > meta['ios_image_size']
+        - ansible_net_version != meta['ios_version']
+    - name: Check MD5 hash
+      ios_command:
+        commands:
+          - command: "verify /md5 flash:{{ ios_image_name }}"
+      register: md5_result
+      vars:
+        ansible_command_timeout: 300
+    - name: Change Boot Variable if the MD5 check passes
+      block:
+        - name: Change boot variable
+          ios_config:
+            lines:
+                - "boot system flash:packages.conf"
+        - name: Copy run start
+          ios_command:
+            commands: write mem
+      when: "'{{ md5_checksum }}' in md5_result.stdout[0]"

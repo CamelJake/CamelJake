@@ -1,0 +1,14 @@
+---
+- name: Update TACACS server timeout
+  hosts: "{{ cisco_router }}"
+  connection: network_cli
+  gather_facts: no
+  tasks:
+  - name: Update server timeout value to 30 seconds
+    ios_config:
+      lines:
+      - timeout 30
+      parents: tacacs server BRIS-ISE-P01
+- import_playbook: CopyRunStart.yml
+  vars:
+    hosts: "{{cisco_router}}"

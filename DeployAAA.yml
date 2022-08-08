@@ -1,0 +1,31 @@
+---
+- name: Deploy ISE AAA
+  hosts: "{{ cisco_router }}"
+  connection: network_cli
+  tasks:
+  - name: Enable aaa new model
+    ios_config:
+      lines:
+      - aaa new-model
+  - name: Define ISE Server
+    ios_config:
+      lines:
+      - address ipv4 10.9.100.8
+      - "key 0 {{ key }}"
+      - timeout 5
+      parents: tacacs server BRIS-ISE-P01
+  - name: Define TACACS+ server group
+    ios_config:
+      lines:
+      - server name BRIS-ISE-P01
+      parents: aaa group server tacacs+ ISE-TACACS
+  - name: Define TACACS+ source VLAN
+    ios_config:
+      lines:
+      - ip tacacs source-interface vlan 254
+  - name: Define AAA for login and exec 
+    ios_config:
+      lines:
+      - aaa authentication login console local
+      - aaa authentication login default group ISE-TACACS local
+      - aaa authorization exec default group ISE-TACACS local

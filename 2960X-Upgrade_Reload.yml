@@ -1,0 +1,22 @@
+- name: Reload Cisco Device
+  hosts: "{{ cisco_router }}"
+  tasks:
+  - name: Reload
+    ios_command:
+      commands:
+          - command: reload
+            prompt: '\[confirm\]'
+            answer: "\r"
+  - name: Wait for device to come back online
+    wait_for_connection:
+      delay: 180
+      timeout: 600
+  - name: Check version
+    ios_command:
+      commands:
+        - command: sh version | b Switch Port
+    register: show_version_output
+  - debug:
+      var: show_version_output.stdout_lines
+       
+      
